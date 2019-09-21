@@ -13,3 +13,8 @@ To start a local server:
 
 Can be deployed to zappa
 https://github.com/Miserlou/Zappa
+
+You'll need the following environment variables:
+```
+export DISCORD_API_KEY=
+```
