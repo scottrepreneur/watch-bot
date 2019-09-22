@@ -55,7 +55,7 @@ async def watcher_message(message):
 	# no @params
 	# Help is available for the other commands to get additional help
 	if watch_command.split(' ')[0] == 'help':
-		commands_help(message, teal)
+		await commands_help(message, teal)
 
 	# Exchanges command
 	# @param [ids] - returns the symbols for the exchanges used in the URLs

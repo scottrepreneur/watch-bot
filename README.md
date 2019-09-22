@@ -2,6 +2,8 @@
 
 This is a [Flask](https://palletsprojects.com/p/flask/) bot for [Cryptowat.ch](https://cryptowat.ch) to Discord.
 
+![Watch Bot Price Summary Command](./summary.png)
+
 ## Get started
 Ideally, use a [virtual environment](https://virtualenv.pypa.io/en/latest/).
 
