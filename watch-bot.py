@@ -6,10 +6,11 @@ import requests_async as requests
 client = discord.Client()
 
 # colors
-discord_teal = discord.Colour(0x00AE86)
-discord_orange = discord.Colour(0xFF4500)
-discord_lime = discord.Colour(0x00FF00)
-discord_blue = discord.Colour(0x00BFFF)
+teal = discord.Colour(0x00AE86)
+orange = discord.Colour(0xFF4500)
+lime = discord.Colour(0x00FF00)
+blue = discord.Colour(0x00BFFF)
+red = discord.Colour(0x8B0000)
 
 app = Flask(__name__)
 
@@ -33,26 +34,27 @@ async def on_message(message):
         await message.channel.send(requests.get('https://aws.random.cat/meow').json()['file'])
 
     # get cryptowat.ch
-    elif message.content.startswith('$watch'):
-    	await watch_message(message)
+    elif message.content.startswith('$watch') or message.content.startswith('$w'):
+    	await watcher_message(message)
 
-async def watch_message(message):
-	print(message.content)
-	watch_command = message.content[7:]
-	print(watch_command.split(' ')[0])
+# TODO: CHECK active markets & exchanges
 
-	# Help command
+async def watcher_message(message):
+	if message.content.split(' ')[0] == '$w':
+		watch_command = message.content[3:]
+	else:
+		watch_command = message.content[7:]
+	print(watch_command.split(' '))
+
+	# General Help command
 	# no @params
-	# add help to other commands to get additional help
+	# Help is available for the other commands to get additional help
 	if watch_command.split(' ')[0] == 'help':
 		embed = discord.Embed(
 			title= 'Bot Commands Help',
 			description= '''Commands available: 
-				```$watch [command] help
-$watch exchanges [ids]
-$watch markets [exchange] [ticker (single coin)]
-$watch price [pair] [exchange default=kraken]```''',
-			color= discord_teal
+				```$watch [command] help\n$watch exchanges [ids]\n$watch markets [exchange] [ticker (single coin)]\n$watch price [pair] [exchange default=kraken]\n$watch summary [pair] [exchange default=kraken]\n$watch orderbook [pair] [exchange]```''',
+			color= teal
 		)
 		embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
 		await discord_embed(message, embed)
@@ -61,32 +63,53 @@ $watch price [pair] [exchange default=kraken]```''',
 	# @param ids - returns the symbols for the exchanges used in the URLs
 	#
 	elif watch_command.split(' ')[0] == 'exchanges':
-		url = cryptowatch_domain + 'exchanges'
-		response = await requests.get(url)
-		exchanges = response.json()['result']
-		_exchanges = []
-
-		try: 
-			if watch_command.split(' ')[1] == 'ids':
-				for e in exchanges:
-					_exchanges.append(e['symbol'])
+		try:
+			if watch_command.split(' ')[1] == 'help':
+				embed = discord.Embed(
+					title='Exchanges Command | `$watch exchanges [ids, optional] `',
+					description='The Exchanges Command will provide all the exchanges available in Watcher.\nOptionally, include `ids` to retrieve the exchange symbols used in the market & pricing commands',
+					color= teal
+					)
+				embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
+				await discord_embed(message, embed)
+				return
 		except:
-			for e in exchanges:
-				_exchanges.append(e['name'])
-		
-		print(_exchanges)
-		embed = discord.Embed(
-			title = 'Exchanges',
-			description = (', ').join(_exchanges),
-			color= discord_orange
-		)
-		embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
-		await discord_embed(message, embed)
+			url = cryptowatch_domain + 'exchanges'
+			response = await requests.get(url)
+			exchanges = response.json()['result']
+			_exchanges = []
+
+			try: 
+				if watch_command.split(' ')[1] == 'ids':
+					for e in exchanges:
+						_exchanges.append(e['symbol'])
+			except:
+				for e in exchanges:
+					_exchanges.append(e['name'])
+			
+			print(_exchanges)
+			embed = discord.Embed(
+				title = 'Exchanges',
+				description = (', ').join(_exchanges),
+				color= orange
+			)
+			embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
+			await discord_embed(message, embed)
 
 	# Markets command
 	# @param first parameter should be an exchange
 	# @param second parameter should be the coin looking for markets
 	elif watch_command.split(' ')[0] == 'markets':
+		if len(watch_command.split(' ')) < 2 or watch_command.split(' ')[1] == 'help':
+			embed = discord.Embed(
+				title='Markets Command | `$watch markets [exchange] [symbol] `',
+				description='Trading Pair: base and quote all lowercase, no space. ex. `btcusd`\nExchange: optionally, include an exchange. Kraken is used by default.',
+				color= teal
+				)
+			embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
+			await discord_embed(message, embed)
+			return
+
 		try:
 			if watch_command.split(' ')[1]:
 				try:
@@ -103,7 +126,7 @@ $watch price [pair] [exchange default=kraken]```''',
 						embed = discord.Embed(
 							title = '{} Markets at {}'.format(str(watch_command.split(' ')[2]).upper(), str(watch_command.split(' ')[1]).capitalize()),
 							description = (', ').join(_markets),
-							color= discord_lime
+							color= lime
 						)
 						embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
 						await discord_embed(message, embed)
@@ -119,20 +142,47 @@ $watch price [pair] [exchange default=kraken]```''',
 	# @param first parameter is a trading pair
 	# @param (optional) the exchange, defaults to kraken if left off
 	elif watch_command.split(' ')[0] == 'price':
+		if len(watch_command.split(' ')) < 2 or watch_command.split(' ')[1] == 'help':
+			embed = discord.Embed(
+				title='Price Command | `$watch price [trading pair] [exchange]`',
+				description='Trading Pair: base and quote all lowercase, no space. ex. `btcusd`\nExchange: optionally, include an exchange. Kraken is used by default.',
+				color= teal
+				)
+			embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
+			await discord_embed(message, embed)
+			return
 		try:
 			if watch_command.split(' ')[2]:
 				url = cryptowatch_domain + 'markets/{}/{}/price'.format(str(watch_command.split(' ')[2]).lower(),str(watch_command.split(' ')[1]).lower())
 				response = await requests.get(url)
 				if response.status_code == 404:
-					await discord_send(message, response.json()['error'])
+					embed = discord.Embed(
+						title='Not Found',
+						description=response.json()['error'],
+						color= red
+						)
+					embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
+					await discord_embed(message, embed)
 					return
 				price = response.json()['result']['price']
-				await discord_send(message, 'The {} price at {} is: '.format(str(watch_command.split(' ')[1]).upper(), str(watch_command.split(' ')[2]).capitalize()) + str(price))
+				embed = discord.Embed(
+						title='{} Price on {} '.format(str(watch_command.split(' ')[1]).upper(), str(watch_command.split(' ')[2]).capitalize()),
+						description=str(price),
+						color= blue
+					)
+				embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
+				await discord_embed(message, embed)
 		except:
 			url = cryptowatch_domain + 'markets/kraken/{}/price'.format(str(watch_command.split(' ')[1]).lower())
 			response = await requests.get(url)
 			price = response.json()['result']['price']
-			await discord_send(message, 'The {} price at {} is: '.format(str(watch_command.split(' ')[1]).upper(), "Kraken") + str(price))
+			embed = discord.Embed(
+					title='{} Price on {} '.format(str(watch_command.split(' ')[1]).upper(), "Kraken").capitalize(),
+					description=str(price),
+					color= blue
+				)
+			embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
+			await discord_embed(message, embed)
 
 	# Summary commands
 	# @param 
@@ -157,6 +207,17 @@ $watch price [pair] [exchange default=kraken]```''',
 	# 
 	elif watch_command.split(' ')[0] == 'arb':
 		await discord_send(message, 'checking for arb opportunities')
+
+	else:
+		embed = discord.Embed(
+			title= 'No Command Found!',
+			description= '''Commands available: 
+				```$watch [command] help\n$watch exchanges [ids]\n$watch markets [exchange] [ticker (single coin)]\n$watch price [pair] [exchange default=kraken]```''',
+			color= red
+		)
+		embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
+		await discord_embed(message, embed)
+
 
 async def discord_send(message, _message):
 	await  message.channel.send(_message)
