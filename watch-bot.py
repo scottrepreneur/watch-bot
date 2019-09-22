@@ -110,11 +110,24 @@ async def watch_message(message):
 			print('outer except')
 			await discord_send(message, 'Please include an exchange and coin with markets request `$watch markets [kraken] [btc]`')
 
+	# Prices command
+	# @param first parameter is a trading pair
+	# @param (optional) the exchange, defaults to kraken if left off
 	elif watch_command.split(' ')[0] == 'price':
-		url = cryptowatch_domain + 'markets/kraken/{}/price'.format(str(watch_command.split(' ')[1]).lower())
-		response = await requests.get(url)
-		price = response.json()['result']['price']
-		await discord_send(message, 'The Bitcoin price is: ' + str(price))
+		try:
+			if watch_command.split(' ')[2]:
+				url = cryptowatch_domain + 'markets/{}/{}/price'.format(str(watch_command.split(' ')[2]).lower(),str(watch_command.split(' ')[1]).lower())
+				response = await requests.get(url)
+				if response.status_code == 404:
+					await discord_send(message, response.json()['error'])
+					return
+				price = response.json()['result']['price']
+				await discord_send(message, 'The {} price at {} is: '.format(str(watch_command.split(' ')[1]).upper(), str(watch_command.split(' ')[2]).capitalize()) + str(price))
+		except:
+			url = cryptowatch_domain + 'markets/kraken/{}/price'.format(str(watch_command.split(' ')[1]).lower())
+			response = await requests.get(url)
+			price = response.json()['result']['price']
+			await discord_send(message, 'The {} price at {} is: '.format(str(watch_command.split(' ')[1]).upper(), "Kraken") + str(price))
 
 	elif watch_command.split(' ')[0] == 'summary':
 		await discord_send(message, "Summary")
