@@ -46,17 +46,20 @@ async def watch_message(message):
 	# add help to other commands to get additional help
 	if watch_command.split(' ')[0] == 'help':
 		embed = discord.Embed(
-			title = 'CryptoWatch Bot Commands',
-			description = '''Commands available: 
-				```$watch help
-				$watch markets
-				$watch price```''',
+			title= 'Bot Commands Help',
+			description= '''Commands available: 
+				```$watch [command] help
+$watch exchanges [ids]
+$watch markets [exchange] [ticker (single coin)]
+$watch price [pair] [exchange default=kraken]```''',
 			color= discord_teal
 		)
+		embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
 		await discord_embed(message, embed)
 
 	# Exchanges command
 	# @param ids - returns the symbols for the exchanges used in the URLs
+	#
 	elif watch_command.split(' ')[0] == 'exchanges':
 		url = cryptowatch_domain + 'exchanges'
 		response = await requests.get(url)
@@ -73,10 +76,11 @@ async def watch_message(message):
 		
 		print(_exchanges)
 		embed = discord.Embed(
-			title = 'CryptoWatch Exchanges',
+			title = 'Exchanges',
 			description = (', ').join(_exchanges),
 			color= discord_orange
 		)
+		embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
 		await discord_embed(message, embed)
 
 	# Markets command
@@ -101,6 +105,7 @@ async def watch_message(message):
 							description = (', ').join(_markets),
 							color= discord_lime
 						)
+						embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
 						await discord_embed(message, embed)
 
 				except:
@@ -110,7 +115,7 @@ async def watch_message(message):
 			print('outer except')
 			await discord_send(message, 'Please include an exchange and coin with markets request `$watch markets [kraken] [btc]`')
 
-	# Prices command
+	# Prices commands
 	# @param first parameter is a trading pair
 	# @param (optional) the exchange, defaults to kraken if left off
 	elif watch_command.split(' ')[0] == 'price':
@@ -129,14 +134,29 @@ async def watch_message(message):
 			price = response.json()['result']['price']
 			await discord_send(message, 'The {} price at {} is: '.format(str(watch_command.split(' ')[1]).upper(), "Kraken") + str(price))
 
+	# Summary commands
+	# @param 
+	# 
 	elif watch_command.split(' ')[0] == 'summary':
 		await discord_send(message, "Summary")
 
+	# Recent trades command
+	# @param
+	# 
 	elif watch_command.split(' ')[0] == 'recent':
 		await discord_send(message, "Recent")
 
+	# Orderbook command
+	# @param
+	# 
 	elif watch_command.split(' ')[0] == 'orderbook':
 		await discord_send(message, "Orderbook")
+
+	# Arbitrage command 
+	# @param
+	# 
+	elif watch_command.split(' ')[0] == 'arb':
+		await discord_send(message, 'checking for arb opportunities')
 
 async def discord_send(message, _message):
 	await  message.channel.send(_message)
