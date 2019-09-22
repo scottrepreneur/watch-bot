@@ -9,12 +9,13 @@ Install modules:
 `$ pip install -r requirements.txt`
 
 To start a local server:
-`flask run`
+`python -m flask run`
 
 Can be deployed to zappa
 https://github.com/Miserlou/Zappa
 
 You'll need the following environment variables:
 ```
+export FLASK_APP=watch-bot.py
 export DISCORD_API_KEY=
 ```

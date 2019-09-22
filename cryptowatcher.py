@@ -286,7 +286,8 @@ async def get_arb_opp(message, watch_command):
 	best_arb = arb_check(arb_markets)
 	embed = discord.Embed(
 			title=best_arb['title'],
-			description=best_arb['description']
+			description=best_arb['description'],
+			color=blue
 		)
 	embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
 	await discord_embed(message, embed)
