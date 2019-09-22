@@ -1,8 +1,11 @@
 import discord
 import requests_async as requests
+import pandas as pd
+from arb_check import arb_check
 
 currency = '$'
 cryptowatch_domain = 'https://api.cryptowat.ch/'
+no_orderbook_data = ['binance-us']
 
 # colors
 teal = discord.Colour(0x00AE86)
@@ -194,6 +197,9 @@ async def get_market_summary(message, watch_command):
 		embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
 		await discord_embed(message, embed)
 
+# Orderbook command
+# @param
+# 
 async def get_orderbook(message, watch_command):
 	if len(watch_command.split(' ')) < 2 or watch_command.split(' ')[1] == 'help':
 		embed = discord.Embed(
@@ -204,7 +210,92 @@ async def get_orderbook(message, watch_command):
 		embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
 		await discord_embed(message, embed)
 		return
+
+	try:
+		print(watch_command.split(' '))
+		if watch_command.split(' ')[2]:
+			url = cryptowatch_domain + 'markets/{}/{}/orderbook'.format(str(watch_command.split(' ')[2]).lower(),str(watch_command.split(' ')[1]).lower())
+			response = await requests.get(url)
+			if response.status_code == 404:
+				embed = discord.Embed(
+					title='Not Found',
+					description=response.json()['error'],
+					color= red
+					)
+				embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
+				await discord_embed(message, embed)
+				return
+			orderbook = response.json()['result']
+			print(orderbook)
+			embed = discord.Embed(
+					title='{} Orderbook on {} '.format(str(watch_command.split(' ')[1]).upper(), str(watch_command.split(' ')[2]).capitalize()),
+					color= blue
+				)
+			await discord_embed(message, embed)
+
+	except:
+		url = cryptowatch_domain + 'markets/kraken/{}/orderbook'.format(str(watch_command.split(' ')[1]).lower())
+		response = await requests.get(url)
+		orderbook = response.json()['result']
+		print(orderbook)
+		embed = discord.Embed(
+				title='{} Orderbook on {} '.format(str(watch_command.split(' ')[1]).upper(), 'Kraken'),
+				color= blue
+			)
+		await discord_embed(message, embed)
+
+# Arbitrage command 
+# @param [trading pair] 
+# 
+async def get_arb_opp(message, watch_command):
+	print(watch_command)
+	if len(watch_command.split(' ')) < 2 or watch_command.split(' ')[1] == 'help':
+		embed = discord.Embed(
+			title='Arbitrage Opportunity Command | `$watch arb [trading pair]`',
+			description='Trading Pair: base and quote all lowercase, no space. ex. `btcusd`',
+			color= teal
+			)
+		embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
+		await discord_embed(message, embed)
+		return
+
+	markets_url = cryptowatch_domain + 'markets'
+	response = await requests.get(markets_url)
+	markets = response.json()['result']
+	_markets = []
+
+	for m in markets:
+		if m['active'] == True and str(m['pair']) == str(watch_command.split(' ')[1]) and not m['exchange'] in no_orderbook_data:
+			orders_url = cryptowatch_domain + 'markets/{}/{}/orderbook'.format(str(m['exchange']), str(m['pair']))
+			print(orders_url)
+			r = await requests.get(orders_url)
+			orderbook = r.json()['result']
+			market = {
+				'exchange': m['exchange'],
+				'pair': m['pair'],
+				'lowest_ask_quote': orderbook['asks'][0][0],
+				'lowest_ask_base': orderbook['asks'][0][1],
+				'highest_bid_quote': orderbook['bids'][0][0],
+				'highest_bid_base': orderbook['bids'][0][1]
+				}
+			_markets.append(market)
 	
+	print(_markets)
+	arb_markets = pd.DataFrame(_markets)
+	# print(arb_markets.head(10))
+	best_arb = arb_check(arb_markets)
+	embed = discord.Embed(
+			title=best_arb['title'],
+			description=best_arb['description']
+		)
+	embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')
+	await discord_embed(message, embed)
+		
+	# print(arb_markets.at['kraken','lowest_ask_quote'])
+	# for index, row in arb_markets.iterrows():
+	# 	print(abs(arb_markets.at['kraken','lowest_ask_quote'] - row['lowest_ask_quote']) / arb_markets.at['kraken','lowest_ask_quote'])
+	# 	if abs(arb_markets.at['kraken','lowest_ask_quote'] - row['lowest_ask_quote']) / arb_markets.at['kraken','lowest_ask_quote'] > 0.001:
+	# 		print(str(abs(arb_markets.at['kraken','lowest_ask_quote'] - row['lowest_ask_quote'])) + ' against ' + index)
 
 async def discord_send(message, _message):
 	await  message.channel.send(_message)

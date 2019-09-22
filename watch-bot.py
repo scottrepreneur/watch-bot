@@ -40,6 +40,7 @@ async def on_message(message):
     elif message.content.startswith('$watch') or message.content.startswith('$w'):
     	await watcher_message(message)
 
+# TODO: SET colors based on up or down market
 # TODO: CHECK active markets & exchanges
 # TODO: SET Currency Symbol based on ticker
 
@@ -80,23 +81,23 @@ async def watcher_message(message):
 	elif watch_command.split(' ')[0] == 'summary':
 		await cryptowatcher.get_market_summary(message, watch_command)
 
-	# Recent trades command
-	# @param
-	# 
-	elif watch_command.split(' ')[0] == 'recent':
-		await discord_send(message, "Recent")
-
 	# Orderbook command
 	# @param
 	# 
-	elif watch_command.split(' ')[0] == 'orderbook':
-		await discord_send(message, "Orderbook")
+	elif watch_command.split(' ')[0] == 'orders':
+		await cryptowatcher.get_orderbook(message, watch_command)
 
 	# Arbitrage command 
 	# @param
 	# 
 	elif watch_command.split(' ')[0] == 'arb':
-		await discord_send(message, 'checking for arb opportunities')
+		await cryptowatcher.get_arb_opp(message, watch_command)
+
+	# Recent trades command
+	# @param
+	# 
+	elif watch_command.split(' ')[0] == 'recent':
+		await discord_send(message, "Recent")
 
 	else:
 		await commands_help(message, red)
@@ -105,7 +106,7 @@ async def watcher_message(message):
 async def commands_help(message, color):
 	embed = discord.Embed(
 		title= 'Bot Commands Help',
-		description= '''Commands available:\n```$watch [command] help\n$watch exchanges [ids]\n$watch markets [exchange] [ticker (single coin)]\n$watch price [pair] [exchange default=kraken]\n$watch summary [pair] [exchange default=kraken]\n$watch orderbook [pair] [exchange]```''',
+		description= '''Commands available:\n```$watch [command] help\n$watch exchanges [ids]\n$watch markets [exchange] [ticker (single coin)]\n$watch price [pair] [exchange default=kraken]\n$watch summary [trading pair] [exchange default=kraken]\n$watch arb [trading pair]```''',
 		color= color
 	)
 	embed.set_author(name='CryptoWat.ch', url='https://cryptowat.ch', icon_url= 'https://static.cryptowat.ch/static/images/cryptowatch.png')

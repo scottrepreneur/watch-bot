@@ -1,2 +1,5 @@
 Flask==1.1.1
 requests==2.22.0
+requests-async==0.6.2
+discord==1.0.1
+pandas==0.25.1
